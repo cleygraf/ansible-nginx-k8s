@@ -1,0 +1,73 @@
+---
+# file: main.yml
+
+  - name: set hostname according inventory variable
+    shell: "hostnamectl set-hostname {{new_hostname}}"
+    when: ( new_hostname is defined ) and ( ansible_facts['nodename'] != new_hostname )
+    register: renamed_host
+
+  - name: install epel-release
+    yum:
+      name: epel-release
+      state: latest
+
+  - name: install updates
+    yum: 
+      name: "*" 
+      state: latest
+      update_cache: yes
+
+  - name: install net-tools (netstat, ...)
+    yum:
+      name: net-tools
+      state: latest
+
+  - name: disable and stop firewalld
+    service:
+      name: firewalld
+      enabled: no
+      state: stopped
+
+  - name: temporary disable swap
+    shell: "/usr/sbin/swapoff -a"
+  
+  - name: remove swap from /etc/fstab
+    lineinfile:
+      path: /etc/fstab
+      regexp: '\s+swap\s+'
+      state: absent
+      backup: yes
+
+  - name: Disable SELinux
+    selinux:
+      state: disabled
+
+  - name: Add the br_netfilter module
+    modprobe:
+      name: br_netfilter
+      state: present
+
+  - name: set net.bridge.bridge-nf-call-ip6tables="1"
+    sysctl:
+      name: net.bridge.bridge-nf-call-ip6tables
+      value: '1'
+      state: present    
+
+  - name: set net.bridge.bridge-nf-call-iptables="1"
+    sysctl:
+      name: net.bridge.bridge-nf-call-iptables
+      value: '1'
+      state: present    
+
+  - name: add IP address of all hosts to all hosts
+    lineinfile:
+      dest: /etc/hosts
+      regexp: '.*{{ item }}$'
+      line: "{{ hostvars[item].ansible_ssh_host }} {{ item }}.{{ subdomain }} {{ item }}"
+      state: present
+    when: hostvars[item].ansible_ssh_host is defined
+    with_items: "{{ groups.all }}"
+
+  - name: restart host if required
+    reboot:
+    when: renamed_host.changed|bool == True

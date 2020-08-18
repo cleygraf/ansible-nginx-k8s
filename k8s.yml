@@ -1,0 +1,18 @@
+---
+# file: k8s.yml
+- hosts: all
+
+  vars:
+    kubernetes_allow_pods_on_master: false
+    kubernetes_version: '1.17'
+    kubernetes_version_rhel_package: '1.17.11'
+
+  roles:
+    - role: common
+      become: yes
+
+    - role: geerlingguy.docker
+      become: yes
+      
+    - role: geerlingguy.kubernetes
+      become: yes

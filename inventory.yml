@@ -1,0 +1,17 @@
+ctl:
+  hosts:
+    kubectl:
+      new_hostname: kubectl.home.local
+      ansible_ssh_host: 192.168.1.130
+      kubernetes_role: "master"
+
+nodes:
+  hosts:
+    kubectl01:
+      new_hostname: kuben01.home.local
+      ansible_ssh_host: 192.168.1.131
+      kubernetes_role: "node"
+    kubectl02:
+      new_hostname: kuben02.home.local
+      ansible_ssh_host: 192.168.1.132
+      kubernetes_role: "node"
