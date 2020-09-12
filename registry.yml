@@ -1,0 +1,27 @@
+---
+# file: registry.yml
+- hosts: registry
+
+  vars:
+    # Harbor related
+    harbor_url: "https://github.com/goharbor/harbor/releases/download/v2.0.2/harbor-offline-installer-v2.0.2.tgz"
+    harbor_hostname: "harbor.lab.leyux.org"
+    # Docker related
+    docker_install_compose: true
+    docker_compose_path: /usr/bin/docker-compose
+    # Kubernetes related:
+    kubernetes_yum_arch: x86_64
+
+  roles:
+    # - role: common
+    #   become: yes
+
+    - role: geerlingguy.docker
+      become: yes
+
+    - role: nodes
+      become: yes  
+
+    - role: harbor
+      become: yes
+

@@ -1,2 +1,6 @@
 - name: geerlingguy.docker
 - name: geerlingguy.kubernetes
+# - name: nicholasamorim.harbor
+# Forked Ansible Galaxy roles.
+- src: https://github.com/cleygraf/ansible-role-harbor.git
+  name: nicholasamorim.harbor

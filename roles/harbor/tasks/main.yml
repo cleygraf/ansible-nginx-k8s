@@ -1,0 +1,98 @@
+---
+# file: roles/harbor/tasks/main.yml
+
+  - name: install additional packages
+    yum:
+      name: 
+        - "python-docker"
+        - "python2-pip"
+      state: latest
+
+  - name: Installing docker python bindings
+    pip:
+      state: present
+      name:
+        - docker
+        - pyyaml>=3.11
+#        - docker-compose>=1.7.0
+
+  - name: Checking if Harbor is already installed
+    stat:
+      path: "/opt/harbor"
+    register: harbor_folder_st
+
+  - name: "Creating Harbor directory... (/opt/harbor)"
+    file:
+      path: "/opt/harbor"
+      state: directory
+      mode: o+r
+    when:
+      - not harbor_folder_st.stat.exists or (harbor_folder_st.stat.isdir is defined and not harbor_folder_st.stat.isdir)
+
+  - name: "Creating Harbor certs directory... (/opt/harbor/certs)"
+    file:
+      path: "/opt/harbor/certs"
+      state: directory
+      mode: o+r
+    when:
+      - not harbor_folder_st.stat.exists or (harbor_folder_st.stat.isdir is defined and not harbor_folder_st.stat.isdir)
+
+
+  - name: "Downloading Harbor (offline installer)"
+    get_url: url={{ harbor_url }} dest=/tmp/harbor.tgz validate_certs=no
+
+  - name: "Uncompressing Harbor installer..."
+    unarchive:
+      remote_src: True
+      src: "/tmp/harbor.tgz"
+      dest: "/opt"
+#      creates: "/opt/harbor"
+
+  - name: Copying over harbor.yml template
+    template:
+      src: harbor.yml.j2
+      dest: "/opt/harbor/harbor.yml"
+
+  - name: copy fullchain.pem
+    copy: src=../../letsencrypt/live/harbor.lab.leyux.org/fullchain.pem dest=/opt/harbor/certs/fullchain.pem
+    
+  - name: copy server.key
+    copy: src=../../letsencrypt/live/harbor.lab.leyux.org/privkey.pem dest=//opt/harbor/certs/privkey.pem
+
+  - name: Running Harbor installer...
+    become: yes
+    shell: "/opt/harbor/install.sh"
+
+  - name: Ensure Kubernetes repository exists.
+    yum_repository:
+      name: kubernetes
+      description: Kubernetes
+      enabled: true
+      gpgcheck: true
+      repo_gpgcheck: true
+      baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-{{ kubernetes_yum_arch }}
+      gpgkey:
+        - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+        - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+  - name: Add Kubernetes GPG keys.
+    rpm_key:
+      key: "{{ item }}"
+      state: present
+    register: kubernetes_rpm_key
+    with_items:
+      - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+  - name: Make cache if Kubernetes GPG key changed.
+    command: "yum -q makecache -y --disablerepo='*' --enablerepo='kubernetes'"
+    when: kubernetes_rpm_key is changed
+    args:
+      warn: false
+
+  - name: Install kubectl,git
+    yum:
+      name: 
+        - "kubectl"
+        - "git"
+      state: latest
