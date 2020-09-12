@@ -1,0 +1,11 @@
+---
+# file: common.yml
+- hosts: all
+
+  vars:
+    # Docker related
+    docker_install_compose: false
+
+  roles:
+    - role: common
+      become: yes
