@@ -1,0 +1,23 @@
+---
+# file: roles/nodes/tasks/main.yml
+
+  - name: "Creating /etc/docker/certs.d directory... "
+    file:
+      path: "/etc/docker/certs.d"
+      state: directory
+      mode: o+r
+
+  - name: "Creating /etc/docker/certs.d/harbor.lab.leyux.org directory... "
+    file:
+      path: "/etc/docker/certs.d/harbor.lab.leyux.org"
+      state: directory
+      mode: o+r
+
+  - name: copy fullchain.pem
+    copy: src=../../letsencrypt/live/harbor.lab.leyux.org/fullchain.pem dest=/etc/docker/certs.d/harbor.lab.leyux.org/fullchain.pem
+    
+  - name: Restart service docker
+    service:
+      name: docker
+      state: restarted
+    become: true

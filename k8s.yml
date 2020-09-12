@@ -1,6 +1,6 @@
 ---
 # file: k8s.yml
-- hosts: all
+- hosts: ctl,nodes
 
   vars:
     kubernetes_allow_pods_on_master: false
@@ -15,4 +15,7 @@
       become: yes
       
     - role: geerlingguy.kubernetes
+      become: yes
+
+    - role: nodes
       become: yes
